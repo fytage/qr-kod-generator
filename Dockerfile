@@ -1,16 +1,20 @@
-# Stage 1: Build
-FROM node:20-alpine AS build
+# Stage 1: Build (Zero-CVE hardened Node image from Chainguard)
+FROM cgr.dev/chainguard/node:latest-dev AS build
 
 WORKDIR /app
 
-COPY package.json package-lock.json* ./
+# Ensure proper permissions for the non-root node user in Chainguard
+COPY --chown=node:node package.json package-lock.json* ./
 RUN npm ci
 
-COPY . .
+COPY --chown=node:node . .
 RUN npm run build
 
 # Stage 2: Serve with nginx
 FROM nginx:alpine AS production
+
+# Upgrade Alpine system packages to resolve any base image CVEs
+RUN apk upgrade --no-cache
 
 # Copy built assets
 COPY --from=build /app/dist /usr/share/nginx/html

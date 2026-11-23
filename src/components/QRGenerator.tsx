@@ -88,8 +88,7 @@ export default function QRGenerator() {
   const contrast = contrastRatio(params.foregroundColor, params.backgroundColor);
   const isContrastOk = contrast >= 4;
 
-  // Auto-generate on params change (debounced)
-  useEffect(() => {
+  const handleGenerate = useCallback(async () => {
     if (!params.text.trim()) {
       setResult(null);
       setPreviewDataUrl(null);
@@ -97,26 +96,6 @@ export default function QRGenerator() {
       latestCanvasRef.current = null;
       return;
     }
-
-    const timer = setTimeout(() => {
-      void handleGenerate();
-    }, 300);
-
-    return () => clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    params.text,
-    params.foregroundColor,
-    params.backgroundColor,
-    params.resolution,
-    params.exportFormat,
-    params.errorCorrectionLevel,
-    params.logoEnabled,
-    params.logoDataUrl,
-  ]);
-
-  const handleGenerate = useCallback(async () => {
-    if (!params.text.trim()) return;
     setIsGenerating(true);
 
     let genResult: GenerationResult;
@@ -146,6 +125,15 @@ export default function QRGenerator() {
       latestCanvasRef.current = null;
     }
   }, [params]);
+
+  // Auto-generate on params change (debounced)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      void handleGenerate();
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [handleGenerate]);
 
   const handleLogoUpload = useCallback(
     async (file: File) => {
